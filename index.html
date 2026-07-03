@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#faf8f5">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Recipes">
+<title>Recipes</title>
+<style>
+  :root {
+    --bg: #faf8f5;
+    --surface: #ffffff;
+    --ink: #2b2825;
+    --ink-soft: #7a736b;
+    --line: #e8e3dc;
+    --accent: #c15f3c;
+    --accent-soft: #f7e9e2;
+    --radius: 12px;
+    --shadow: 0 1px 3px rgba(43,40,37,.06), 0 4px 14px rgba(43,40,37,.05);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font: 15px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 32px 20px 80px; }
+
+  /* ---------- Header ---------- */
+  header { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
+  header h1 { font-size: 22px; font-weight: 700; letter-spacing: -.02em; margin-right: auto; }
+  .search {
+    flex: 1 1 200px; max-width: 320px;
+    display: flex; align-items: center; gap: 8px;
+    background: var(--surface); border: 1px solid var(--line); border-radius: 99px;
+    padding: 8px 14px;
+  }
+  .search svg { flex: none; color: var(--ink-soft); }
+  .search input { border: 0; outline: 0; background: transparent; font: inherit; width: 100%; color: var(--ink); }
+  .search input::placeholder { color: var(--ink-soft); }
+
+  .btn {
+    font: inherit; font-weight: 600; cursor: pointer; border: 0;
+    border-radius: 99px; padding: 9px 18px; transition: background .15s, transform .06s;
+  }
+  .btn:active { transform: scale(.97); }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: #ad4f2e; }
+  .btn-ghost { background: transparent; color: var(--ink-soft); border: 1px solid var(--line); }
+  .btn-ghost:hover { color: var(--ink); border-color: #d6cfc6; }
+  .btn-danger { background: transparent; color: #b3402e; border: 1px solid #eccfc8; }
+  .btn-danger:hover { background: #fbeeea; }
+
+  /* ---------- Tag filter row ---------- */
+  .tagbar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 24px; }
+  .chip {
+    font: inherit; font-size: 13px; cursor: pointer;
+    background: var(--surface); border: 1px solid var(--line); color: var(--ink-soft);
+    border-radius: 99px; padding: 4px 13px; transition: all .15s;
+  }
+  .chip:hover { border-color: #d6cfc6; color: var(--ink); }
+  .chip.active { background: var(--ink); border-color: var(--ink); color: #fff; }
+
+  /* ---------- Card grid ---------- */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
+  .card {
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 20px; cursor: pointer; box-shadow: var(--shadow);
+    transition: transform .12s, box-shadow .12s;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .card:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(43,40,37,.08), 0 10px 24px rgba(43,40,37,.08); }
+  .card h3 { font-size: 16.5px; font-weight: 650; letter-spacing: -.01em; line-height: 1.3; }
+  .card .meta { font-size: 13px; color: var(--ink-soft); display: flex; gap: 12px; }
+  .card .meta span { display: inline-flex; align-items: center; gap: 5px; }
+  .card .tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: auto; }
+  .tag {
+    font-size: 11.5px; font-weight: 600; letter-spacing: .02em;
+    background: var(--accent-soft); color: var(--accent);
+    border-radius: 99px; padding: 2px 9px;
+  }
+
+  .empty { text-align: center; padding: 80px 20px; color: var(--ink-soft); }
+  .empty .big { font-size: 40px; margin-bottom: 12px; }
+  .empty p { margin-bottom: 20px; }
+
+  /* ---------- Detail view ---------- */
+  .back {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: none; border: 0; font: inherit; font-weight: 600; color: var(--ink-soft);
+    cursor: pointer; padding: 0; margin-bottom: 20px;
+  }
+  .back:hover { color: var(--ink); }
+  .detail {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 16px;
+    box-shadow: var(--shadow); padding: 36px; max-width: 680px; margin: 0 auto;
+  }
+  .detail h2 { font-size: 26px; font-weight: 700; letter-spacing: -.02em; line-height: 1.2; }
+  .detail .meta { color: var(--ink-soft); font-size: 14px; margin-top: 8px; display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+  .detail .tags { display: inline-flex; gap: 6px; flex-wrap: wrap; }
+  .detail hr, .form-card hr { border: 0; border-top: 1px solid var(--line); margin: 24px 0; }
+  .detail h4 {
+    font-size: 12px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase;
+    color: var(--ink-soft); margin-bottom: 12px;
+  }
+  .section-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .section-head h4 { margin-bottom: 0; }
+
+  .scaler { display: flex; align-items: center; gap: 2px; background: var(--bg); border: 1px solid var(--line); border-radius: 99px; padding: 2px; }
+  .scaler button {
+    width: 28px; height: 28px; border: 0; border-radius: 99px; background: transparent;
+    font-size: 16px; color: var(--ink-soft); cursor: pointer; line-height: 1;
+  }
+  .scaler button:hover { background: var(--surface); color: var(--ink); }
+  .scaler .count { font-size: 13px; font-weight: 600; min-width: 76px; text-align: center; }
+
+  .controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+  .seg { display: inline-flex; background: var(--bg); border: 1px solid var(--line); border-radius: 99px; padding: 2px; }
+  .seg button {
+    border: 0; background: transparent; font: inherit; font-size: 12.5px; font-weight: 600;
+    color: var(--ink-soft); padding: 4px 12px; border-radius: 99px; cursor: pointer; transition: all .15s;
+  }
+  .seg button:hover { color: var(--ink); }
+  .seg button.active { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(43,40,37,.1); }
+
+  ul.ings { list-style: none; }
+  ul.ings li { padding: 7px 0; border-bottom: 1px dashed var(--line); display: flex; gap: 10px; }
+  ul.ings li:last-child { border-bottom: 0; }
+  ul.ings .qty { font-weight: 650; color: var(--accent); white-space: nowrap; min-width: 52px; }
+  ol.steps { list-style: none; counter-reset: step; }
+  ol.steps li { counter-increment: step; display: flex; gap: 14px; padding: 9px 0; }
+  ol.steps li::before {
+    content: counter(step);
+    flex: none; width: 26px; height: 26px; border-radius: 99px;
+    background: var(--accent-soft); color: var(--accent);
+    font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center;
+    margin-top: 1px;
+  }
+  .detail-actions { display: flex; gap: 10px; margin-top: 28px; }
+
+  /* ---------- Form ---------- */
+  .form-card {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 16px;
+    box-shadow: var(--shadow); padding: 36px; max-width: 620px; margin: 0 auto;
+  }
+  .form-card h2 { font-size: 21px; font-weight: 700; margin-bottom: 24px; letter-spacing: -.01em; }
+  .field { margin-bottom: 18px; }
+  .field label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--ink); }
+  .field .hint { font-weight: 400; color: var(--ink-soft); }
+  .field input, .field textarea {
+    width: 100%; font: inherit; color: var(--ink);
+    background: var(--bg); border: 1px solid var(--line); border-radius: 8px;
+    padding: 9px 12px; outline: 0; transition: border-color .15s, box-shadow .15s;
+  }
+  .field input:focus, .field textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); background: var(--surface); }
+  .field textarea { resize: vertical; min-height: 110px; }
+  .field textarea.mono { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 12.5px; line-height: 1.5; }
+  .io-msg { font-size: 13px; font-weight: 600; color: #3e7c4f; align-self: center; }
+  .io-msg.err { color: #b3402e; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .form-actions { display: flex; gap: 10px; margin-top: 26px; }
+
+  @media (max-width: 560px) {
+    .detail, .form-card { padding: 24px 20px; }
+    .row2 { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap"><div id="app"></div></div>
+
+<script>
+(() => {
+  'use strict';
+
+  // ---------- Recipes (source of truth for Claude-managed recipes) ----------
+  // Baked into the source. Merged into storage on load, matched by stable id so
+  // they never duplicate. Deleting one records its id so it won't reappear.
+  //
+  // Editing rules (for Claude or anyone editing this file directly):
+  //   - Add a recipe: append an object with a NEW unique id and rev: 1.
+  //   - Tweak a recipe: edit it here and bump its rev by 1 — the higher rev
+  //     overrides the copy saved in the browser's localStorage.
+  //   - A recipe deleted in the app stays deleted; to bring it back, re-add it
+  //     under a new id.
+  //   - Recipes the user adds via the in-app form live only in localStorage;
+  //     they export them as JSON (Import & export screen) to get them in here.
+  const SEED_RECIPES = [
+    {
+      id: 'seed-pancakes',
+      rev: 1,
+      title: 'Fluffy Buttermilk Pancakes',
+      prepTime: '20',
+      servings: 4,
+      tags: ['breakfast', 'quick'],
+      ingredients: [
+        '1 1/2 cups all-purpose flour',
+        '3 1/2 tsp baking powder',
+        '1 tsp salt',
+        '1 tbsp sugar',
+        '1 1/4 cups buttermilk',
+        '3 tbsp butter, melted',
+        '1 egg',
+      ],
+      steps: [
+        'Whisk the flour, baking powder, salt and sugar together.',
+        'In another bowl, beat the egg with the buttermilk and melted butter.',
+        'Pour the wet into the dry and stir just until combined — lumps are fine.',
+        'Ladle onto a hot greased griddle and cook until bubbles form, then flip.',
+        'Cook until golden and serve warm.',
+      ],
+    },
+    {
+      id: 'seed-pasta',
+      rev: 1,
+      title: 'Lemon Garlic Pasta',
+      prepTime: '25',
+      servings: 2,
+      tags: ['dinner', 'vegetarian', 'quick'],
+      ingredients: [
+        '8 oz spaghetti',
+        '3 tbsp olive oil',
+        '4 cloves garlic, thinly sliced',
+        '1 lemon, zested and juiced',
+        '1/2 cup grated parmesan',
+        '1/4 tsp red pepper flakes',
+        'salt and pepper to taste',
+        'handful of parsley, chopped',
+      ],
+      steps: [
+        'Cook the spaghetti in salted water until al dente; reserve a cup of pasta water.',
+        'Warm the olive oil and gently fry the garlic with the red pepper flakes.',
+        'Add lemon zest and juice, then the drained pasta and a splash of pasta water.',
+        'Toss with parmesan until glossy, loosening with more pasta water if needed.',
+        'Finish with parsley, salt and pepper.',
+      ],
+    },
+    {
+      id: 'seed-soup',
+      rev: 1,
+      title: 'Roasted Tomato Basil Soup',
+      prepTime: '45',
+      servings: 6,
+      tags: ['dinner', 'vegetarian', 'soup'],
+      ingredients: [
+        '3 lbs ripe tomatoes, halved',
+        '1 onion, quartered',
+        '6 cloves garlic',
+        '3 tbsp olive oil',
+        '3 cups vegetable stock',
+        '1/2 cup fresh basil',
+        '1/4 cup heavy cream',
+        '1 tsp salt',
+      ],
+      steps: [
+        'Heat oven to 425°F. Toss tomatoes, onion and garlic with olive oil and salt.',
+        'Roast on a sheet pan for 30 minutes until caramelized at the edges.',
+        'Scrape everything into a pot, add the stock and bring to a simmer.',
+        'Blend smooth with the basil, then stir in the cream.',
+        'Taste, adjust seasoning, and serve.',
+      ],
+    },
+  ];
+
+  // ---------- Persistence: window.storage with localStorage fallback ----------
+  const KEY = 'recipe-tracker:recipes';
+  const DEL_KEY = 'recipe-tracker:deleted-seeds';
+  const UNITS_KEY = 'recipe-tracker:units';
+
+  async function storageGetRaw(key) {
+    try {
+      if (window.storage && typeof window.storage.get === 'function') {
+        const res = await window.storage.get(key);
+        return res && typeof res === 'object' && 'value' in res ? res.value : res;
+      }
+    } catch (e) { /* fall through */ }
+    try { return localStorage.getItem(key); } catch (e) { return null; }
+  }
+
+  async function storageSetRaw(key, raw) {
+    try {
+      if (window.storage && typeof window.storage.set === 'function') {
+        await window.storage.set(key, raw);
+        return;
+      }
+    } catch (e) { /* fall through */ }
+    try { localStorage.setItem(key, raw); } catch (e) { /* storage unavailable */ }
+  }
+
+  async function storageGetJSON(key) {
+    const raw = await storageGetRaw(key);
+    if (!raw) return null;
+    try { return JSON.parse(raw); } catch (e) { return null; }
+  }
+
+  async function loadRecipes() {
+    const stored = await storageGetJSON(KEY);
+    const list = Array.isArray(stored) ? stored : [];
+    const deleted = new Set(deletedSeeds);
+    // Merge in file recipes: add new ones, and let a bumped rev in the file
+    // override the copy saved in the browser.
+    SEED_RECIPES.forEach(seed => {
+      if (deleted.has(seed.id)) return;
+      const idx = list.findIndex(r => r.id === seed.id);
+      if (idx < 0) {
+        list.push(JSON.parse(JSON.stringify(seed)));
+      } else if ((seed.rev || 1) > (list[idx].rev || 1)) {
+        list[idx] = JSON.parse(JSON.stringify(seed));
+      }
+    });
+    return list;
+  }
+
+  async function saveRecipes() {
+    await storageSetRaw(KEY, JSON.stringify(recipes));
+  }
+
+  async function saveDeletedSeeds() {
+    await storageSetRaw(DEL_KEY, JSON.stringify(deletedSeeds));
+  }
+
+  // ---------- State ----------
+  let recipes = [];
+  let view = { name: 'list' };       // list | detail | form
+  let query = '';
+  let activeTag = null;
+  let servingsOverride = null;       // detail-view scaled servings
+  let confirmingDelete = false;
+  let deletedSeeds = [];             // seed ids the user has deleted
+  let unitPref = 'imperial';         // 'imperial' | 'metric', persisted
+
+  const app = document.getElementById('app');
+  const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+
+  async function copyText(text) {
+    try { await navigator.clipboard.writeText(text); return true; }
+    catch (e) { /* fall back for sandboxes that block the clipboard API */ }
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch (e) { /* not available */ }
+    ta.remove();
+    return ok;
+  }
+
+  // ---------- Quantity parsing & scaling ----------
+  const UNI = { '¼':.25,'½':.5,'¾':.75,'⅓':1/3,'⅔':2/3,'⅕':.2,'⅖':.4,'⅗':.6,'⅘':.8,'⅙':1/6,'⅚':5/6,'⅛':.125,'⅜':.375,'⅝':.625,'⅞':.875 };
+  const QTY_RE = new RegExp(
+    '^\\s*(' +
+      '\\d+\\s+\\d+\\s*/\\s*\\d+' +          // 1 1/2
+      '|\\d+\\s*/\\s*\\d+' +                 // 3/4
+      '|\\d+(?:\\.\\d+)?\\s*[¼½¾⅓⅔⅕⅖⅗⅘⅙⅚⅛⅜⅝⅞]' + // 1½
+      '|\\d+(?:\\.\\d+)?' +                  // 2 or 1.5
+      '|[¼½¾⅓⅔⅕⅖⅗⅘⅙⅚⅛⅜⅝⅞]' +                // ½
+    ')\\s*'
+  );
+
+  function toNumber(str) {
+    str = str.trim();
+    if (UNI[str] !== undefined) return UNI[str];
+    const last = str[str.length - 1];
+    if (UNI[last] !== undefined) return parseFloat(str.slice(0, -1)) + UNI[last];
+    if (str.includes('/')) {
+      const parts = str.split(/\s+/);
+      let whole = 0, frac = parts[parts.length - 1];
+      if (parts.length > 1) whole = parseFloat(parts[0]);
+      const [n, d] = frac.split('/').map(Number);
+      return whole + (d ? n / d : 0);
+    }
+    return parseFloat(str);
+  }
+
+  const NICE = [[0,''],[ .125,'⅛'],[1/6,'⅙'],[ .25,'¼'],[1/3,'⅓'],[ .375,'⅜'],[ .5,'½'],[ .625,'⅝'],[2/3,'⅔'],[ .75,'¾'],[5/6,'⅚'],[ .875,'⅞'],[1,'']];
+  function formatQty(n) {
+    if (n <= 0) return '0';
+    const whole = Math.floor(n), rem = n - whole;
+    let best = null, bestDiff = Infinity;
+    for (const [v, sym] of NICE) {
+      const d = Math.abs(rem - v);
+      if (d < bestDiff) { bestDiff = d; best = [v, sym]; }
+    }
+    if (bestDiff <= 0.03) {
+      const w = whole + (best[0] === 1 ? 1 : 0);
+      const sym = best[0] === 1 ? '' : best[1];
+      if (!w && !sym) return formatDec(n);
+      return (w || '') + sym || formatDec(n);
+    }
+    return formatDec(n);
+  }
+  function formatDec(n) {
+    const r = Math.round(n * 100) / 100;
+    return String(r % 1 === 0 ? r : r.toFixed(2).replace(/0$/, ''));
+  }
+
+  // ---------- Units & imperial/metric conversion ----------
+  // Ordered so multi-word forms ("fl oz") match before their prefixes ("oz").
+  const UNIT_DEFS = [
+    { re: /^fl\.?\s*oz\b|^fluid ounces?\b/i, key: 'floz' },
+    { re: /^tablespoons?\b|^tbsps?\b/i,      key: 'tbsp' },
+    { re: /^teaspoons?\b|^tsps?\b/i,         key: 'tsp' },
+    { re: /^cups?\b/i,                       key: 'cup' },
+    { re: /^ounces?\b|^oz\b/i,               key: 'oz' },
+    { re: /^pounds?\b|^lbs?\b/i,             key: 'lb' },
+    { re: /^pints?\b|^pt\b/i,                key: 'pint' },
+    { re: /^quarts?\b|^qt\b/i,               key: 'quart' },
+    { re: /^gallons?\b|^gal\b/i,             key: 'gallon' },
+    { re: /^kilograms?\b|^kg\b/i,            key: 'kg' },
+    { re: /^grams?\b|^g\b/i,                 key: 'g' },
+    { re: /^millilitres?\b|^milliliters?\b|^ml\b/i, key: 'ml' },
+    { re: /^litres?\b|^liters?\b|^l\b/i,     key: 'l' },
+  ];
+  // Cooking-standard equivalents (1 cup = 240 ml, 1 oz = 28.35 g).
+  const UNIT_INFO = {
+    tsp:    { sys: 'imperial', type: 'vol', toMl: 5 },
+    tbsp:   { sys: 'imperial', type: 'vol', toMl: 15 },
+    cup:    { sys: 'imperial', type: 'vol', toMl: 240 },
+    floz:   { sys: 'imperial', type: 'vol', toMl: 30 },
+    pint:   { sys: 'imperial', type: 'vol', toMl: 473 },
+    quart:  { sys: 'imperial', type: 'vol', toMl: 946 },
+    gallon: { sys: 'imperial', type: 'vol', toMl: 3785 },
+    oz:     { sys: 'imperial', type: 'wt',  toG: 28.35 },
+    lb:     { sys: 'imperial', type: 'wt',  toG: 453.6 },
+    ml:     { sys: 'metric',   type: 'vol', toMl: 1 },
+    l:      { sys: 'metric',   type: 'vol', toMl: 1000 },
+    g:      { sys: 'metric',   type: 'wt',  toG: 1 },
+    kg:     { sys: 'metric',   type: 'wt',  toG: 1000 },
+  };
+
+  const snap = (n, denom) => Math.max(Math.round(n * denom) / denom, 1 / denom);
+  function roundMetric(n) {
+    if (n >= 20) return Math.round(n / 5) * 5;
+    if (n >= 1) return Math.round(n);
+    return Math.round(n * 10) / 10;
+  }
+
+  // Convert a scaled quantity to the target system; null = leave line as written.
+  function convert(qty, unitKey, target) {
+    const info = UNIT_INFO[unitKey];
+    if (!info || info.sys === target) return null;
+    if (target === 'metric') {
+      if (info.type === 'vol') {
+        const ml = qty * info.toMl;
+        return ml >= 1000 ? formatDec(Math.round(ml / 10) / 100) + ' l' : roundMetric(ml) + ' ml';
+      }
+      const g = qty * info.toG;
+      return g >= 1000 ? formatDec(Math.round(g / 10) / 100) + ' kg' : roundMetric(g) + ' g';
+    }
+    // target imperial: pick a sensible unit for the amount
+    if (info.type === 'vol') {
+      const ml = qty * info.toMl;
+      if (ml < 7.5) return formatQty(snap(ml / 5, 8)) + ' tsp';
+      if (ml < 60) return formatQty(snap(ml / 15, 4)) + ' tbsp';
+      const cups = snap(ml / 240, 8);
+      return formatQty(cups) + (cups > 1 ? ' cups' : ' cup');
+    }
+    const g = qty * info.toG;
+    if (g < 450) return formatQty(snap(g / 28.35, 4)) + ' oz';
+    return formatQty(snap(g / 453.6, 4)) + ' lb';
+  }
+
+  // Split an ingredient line into {qty, unit, rest}; qty is null if no leading
+  // number, unit is null if the word after the quantity isn't a known measure.
+  function parseIngredient(line) {
+    const m = line.match(QTY_RE);
+    if (!m) return { qty: null, unit: null, rest: line };
+    let rest = line.slice(m[0].length);
+    let unit = null;
+    for (const def of UNIT_DEFS) {
+      const um = rest.match(def.re);
+      if (um) {
+        unit = { key: def.key, text: um[0] };
+        rest = rest.slice(um[0].length).replace(/^\s+/, '');
+        break;
+      }
+    }
+    return { qty: toNumber(m[1]), unit, rest };
+  }
+
+  // ---------- Rendering ----------
+  function render() {
+    if (view.name === 'list') renderList();
+    else if (view.name === 'detail') renderDetail();
+    else if (view.name === 'io') renderIO();
+    else renderForm();
+    window.scrollTo(0, 0);
+  }
+
+  function allTags() {
+    const s = new Set();
+    recipes.forEach(r => r.tags.forEach(t => s.add(t)));
+    return [...s].sort((a, b) => a.localeCompare(b));
+  }
+
+  function filtered() {
+    const q = query.trim().toLowerCase();
+    return recipes.filter(r => {
+      if (activeTag && !r.tags.includes(activeTag)) return false;
+      if (!q) return true;
+      return r.title.toLowerCase().includes(q)
+        || r.tags.some(t => t.toLowerCase().includes(q))
+        || r.ingredients.some(i => i.toLowerCase().includes(q));
+    });
+  }
+
+  function renderList() {
+    const tags = allTags();
+    const list = filtered();
+
+    app.innerHTML = `
+      <header>
+        <h1>Recipes</h1>
+        <div class="search">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+          <input id="search" type="text" placeholder="Search recipes…" value="${esc(query)}">
+        </div>
+        <button class="btn btn-ghost" id="io-btn" title="Import or export recipes as JSON">Import / Export</button>
+        <button class="btn btn-primary" id="add-btn">+ New recipe</button>
+      </header>
+      ${tags.length ? `<div class="tagbar">
+        <button class="chip ${!activeTag ? 'active' : ''}" data-tag="">All</button>
+        ${tags.map(t => `<button class="chip ${activeTag === t ? 'active' : ''}" data-tag="${esc(t)}">${esc(t)}</button>`).join('')}
+      </div>` : ''}
+      ${list.length ? `<div class="grid">${list.map(cardHTML).join('')}</div>`
+        : `<div class="empty">
+             <div class="big">🍳</div>
+             <p>${recipes.length ? 'No recipes match your search.' : 'No recipes yet. Add your first one.'}</p>
+             ${recipes.length ? '' : '<button class="btn btn-primary" id="empty-add">+ New recipe</button>'}
+           </div>`}
+    `;
+
+    document.getElementById('add-btn').onclick = () => { view = { name: 'form', id: null }; render(); };
+    document.getElementById('io-btn').onclick = () => { view = { name: 'io' }; render(); };
+    const emptyAdd = document.getElementById('empty-add');
+    if (emptyAdd) emptyAdd.onclick = () => { view = { name: 'form', id: null }; render(); };
+
+    const search = document.getElementById('search');
+    search.oninput = e => {
+      query = e.target.value;
+      render();
+      const el = document.getElementById('search');
+      el.focus();
+      el.setSelectionRange(el.value.length, el.value.length);
+    };
+
+    app.querySelectorAll('.chip').forEach(ch => ch.onclick = () => {
+      activeTag = ch.dataset.tag || null;
+      render();
+    });
+    app.querySelectorAll('.card').forEach(c => c.onclick = () => {
+      view = { name: 'detail', id: c.dataset.id };
+      servingsOverride = null;
+      confirmingDelete = false;
+      render();
+    });
+  }
+
+  function cardHTML(r) {
+    return `
+      <div class="card" data-id="${r.id}">
+        <h3>${esc(r.title)}</h3>
+        <div class="meta">
+          ${r.prepTime ? `<span><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>${esc(r.prepTime)} min</span>` : ''}
+          <span>${r.ingredients.length} ingredient${r.ingredients.length === 1 ? '' : 's'}</span>
+        </div>
+        ${r.tags.length ? `<div class="tags">${r.tags.map(t => `<span class="tag">${esc(t)}</span>`).join('')}</div>` : ''}
+      </div>`;
+  }
+
+  function renderDetail() {
+    const r = recipes.find(x => x.id === view.id);
+    if (!r) { view = { name: 'list' }; return render(); }
+
+    const base = r.servings || 1;
+    const current = servingsOverride ?? base;
+    const factor = current / base;
+
+    const ings = r.ingredients.map(line => {
+      const { qty, unit, rest } = parseIngredient(line);
+      if (qty === null) return `<li><span>${esc(line)}</span></li>`;
+      const scaled = qty * factor;
+      const converted = unit ? convert(scaled, unit.key, unitPref) : null;
+      const label = converted || (formatQty(scaled) + (unit ? ' ' + unit.text : ''));
+      return `<li><span class="qty">${esc(label)}</span><span>${esc(rest)}</span></li>`;
+    }).join('');
+
+    app.innerHTML = `
+      <button class="back" id="back">← All recipes</button>
+      <div class="detail">
+        <h2>${esc(r.title)}</h2>
+        <div class="meta">
+          ${r.prepTime ? `<span>⏱ ${esc(r.prepTime)} min</span>` : ''}
+          ${r.tags.length ? `<span class="tags">${r.tags.map(t => `<span class="tag">${esc(t)}</span>`).join('')}</span>` : ''}
+        </div>
+        <hr>
+        <div class="section-head">
+          <h4>Ingredients</h4>
+          <div class="controls">
+            <div class="seg" id="units">
+              <button data-u="imperial" class="${unitPref === 'imperial' ? 'active' : ''}">Imperial</button>
+              <button data-u="metric" class="${unitPref === 'metric' ? 'active' : ''}">Metric</button>
+            </div>
+            <div class="scaler">
+              <button id="minus" title="Fewer servings">−</button>
+              <span class="count">${current} serving${current === 1 ? '' : 's'}</span>
+              <button id="plus" title="More servings">+</button>
+            </div>
+          </div>
+        </div>
+        <ul class="ings">${ings}</ul>
+        <hr>
+        <h4>Steps</h4>
+        <ol class="steps">${r.steps.map(s => `<li><span>${esc(s)}</span></li>`).join('')}</ol>
+        <div class="detail-actions">
+          <button class="btn btn-ghost" id="edit">Edit</button>
+          <button class="btn btn-ghost" id="copy-json" title="Copy this recipe as JSON">Copy JSON</button>
+          <button class="btn btn-danger" id="delete">${confirmingDelete ? 'Really delete?' : 'Delete'}</button>
+        </div>
+      </div>
+    `;
+
+    document.getElementById('back').onclick = () => { view = { name: 'list' }; render(); };
+    app.querySelectorAll('#units button').forEach(b => b.onclick = async () => {
+      unitPref = b.dataset.u;
+      render();
+      await storageSetRaw(UNITS_KEY, unitPref);
+    });
+    document.getElementById('minus').onclick = () => {
+      servingsOverride = Math.max(1, current - 1); render();
+    };
+    document.getElementById('plus').onclick = () => {
+      servingsOverride = Math.min(99, current + 1); render();
+    };
+    document.getElementById('edit').onclick = () => { view = { name: 'form', id: r.id }; render(); };
+    document.getElementById('copy-json').onclick = async () => {
+      const ok = await copyText(JSON.stringify(r, null, 2));
+      const btn = document.getElementById('copy-json');
+      if (btn) {
+        btn.textContent = ok ? 'Copied ✓' : 'Copy failed';
+        setTimeout(() => { const b = document.getElementById('copy-json'); if (b) b.textContent = 'Copy JSON'; }, 2000);
+      }
+    };
+    document.getElementById('delete').onclick = async () => {
+      if (!confirmingDelete) { confirmingDelete = true; return render(); }
+      recipes = recipes.filter(x => x.id !== r.id);
+      // If this was a seeded recipe, remember it so it doesn't come back on reload.
+      if (SEED_RECIPES.some(s => s.id === r.id) && !deletedSeeds.includes(r.id)) {
+        deletedSeeds.push(r.id);
+        await saveDeletedSeeds();
+      }
+      await saveRecipes();
+      confirmingDelete = false;
+      view = { name: 'list' };
+      render();
+    };
+  }
+
+  function renderForm() {
+    const editing = view.id ? recipes.find(x => x.id === view.id) : null;
+    const r = editing || { title: '', prepTime: '', servings: 4, tags: [], ingredients: [], steps: [] };
+
+    app.innerHTML = `
+      <button class="back" id="back">← Cancel</button>
+      <div class="form-card">
+        <h2>${editing ? 'Edit recipe' : 'New recipe'}</h2>
+        <div class="field">
+          <label for="f-title">Title</label>
+          <input id="f-title" type="text" placeholder="e.g. Lemon garlic pasta" value="${esc(r.title)}">
+        </div>
+        <div class="row2">
+          <div class="field">
+            <label for="f-prep">Prep time <span class="hint">(minutes)</span></label>
+            <input id="f-prep" type="number" min="0" placeholder="30" value="${esc(r.prepTime)}">
+          </div>
+          <div class="field">
+            <label for="f-serv">Servings</label>
+            <input id="f-serv" type="number" min="1" max="99" value="${esc(r.servings || 4)}">
+          </div>
+        </div>
+        <div class="field">
+          <label for="f-tags">Tags <span class="hint">(comma-separated)</span></label>
+          <input id="f-tags" type="text" placeholder="dinner, vegetarian, quick" value="${esc(r.tags.join(', '))}">
+        </div>
+        <div class="field">
+          <label for="f-ings">Ingredients <span class="hint">(one per line — start with a quantity so it can scale, e.g. “2 cups flour”)</span></label>
+          <textarea id="f-ings" placeholder="2 cups flour&#10;1/2 tsp salt&#10;3 eggs">${esc(r.ingredients.join('\n'))}</textarea>
+        </div>
+        <div class="field">
+          <label for="f-steps">Steps <span class="hint">(one per line)</span></label>
+          <textarea id="f-steps" placeholder="Whisk the eggs.&#10;Fold in the flour.">${esc(r.steps.join('\n'))}</textarea>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-primary" id="save">${editing ? 'Save changes' : 'Add recipe'}</button>
+          <button class="btn btn-ghost" id="cancel">Cancel</button>
+        </div>
+      </div>
+    `;
+
+    const goBack = () => {
+      view = editing ? { name: 'detail', id: editing.id } : { name: 'list' };
+      render();
+    };
+    document.getElementById('back').onclick = goBack;
+    document.getElementById('cancel').onclick = goBack;
+
+    document.getElementById('save').onclick = async () => {
+      const title = document.getElementById('f-title').value.trim();
+      if (!title) { document.getElementById('f-title').focus(); return; }
+      const splitLines = v => v.split('\n').map(s => s.trim()).filter(Boolean);
+      const data = {
+        title,
+        prepTime: document.getElementById('f-prep').value.trim(),
+        servings: Math.max(1, parseInt(document.getElementById('f-serv').value, 10) || 1),
+        tags: document.getElementById('f-tags').value.split(',').map(s => s.trim().toLowerCase()).filter(Boolean),
+        ingredients: splitLines(document.getElementById('f-ings').value),
+        steps: splitLines(document.getElementById('f-steps').value),
+      };
+      if (editing) {
+        Object.assign(editing, data);
+      } else {
+        recipes.unshift({ id: uid(), ...data });
+      }
+      await saveRecipes();
+      servingsOverride = null;
+      view = { name: 'detail', id: editing ? editing.id : recipes[0].id };
+      render();
+    };
+  }
+
+  // ---------- Import / export ----------
+  // Accepts a single recipe object or an array. Tolerant of chat-generated
+  // JSON: ingredients/steps may be arrays or newline-separated strings, tags
+  // an array or comma-separated string. Returns null if there's no title.
+  function normalizeRecipe(x) {
+    if (!x || typeof x !== 'object' || Array.isArray(x)) return null;
+    const title = String(x.title || '').trim();
+    if (!title) return null;
+    const toLines = v => Array.isArray(v) ? v.map(s => String(s).trim()).filter(Boolean)
+      : typeof v === 'string' ? v.split('\n').map(s => s.trim()).filter(Boolean) : [];
+    const toTags = v => Array.isArray(v) ? v.map(s => String(s).trim().toLowerCase()).filter(Boolean)
+      : typeof v === 'string' ? v.split(',').map(s => s.trim().toLowerCase()).filter(Boolean) : [];
+    return {
+      id: typeof x.id === 'string' && x.id.trim() ? x.id.trim() : uid(),
+      ...(Number.isFinite(+x.rev) && +x.rev > 0 ? { rev: Math.floor(+x.rev) } : {}),
+      title,
+      prepTime: x.prepTime != null && String(x.prepTime).trim() !== '' ? String(parseInt(x.prepTime, 10) || '') : '',
+      servings: Math.max(1, Math.min(99, parseInt(x.servings, 10) || 4)),
+      tags: toTags(x.tags),
+      ingredients: toLines(x.ingredients),
+      steps: toLines(x.steps),
+    };
+  }
+
+  function renderIO(msg, isErr, keepInput) {
+    app.innerHTML = `
+      <button class="back" id="back">← All recipes</button>
+      <div class="form-card">
+        <h2>Import &amp; export</h2>
+        <div class="field">
+          <label for="io-in">Import <span class="hint">— paste one recipe <code>{…}</code> or a list <code>[…]</code>. Fields: title, prepTime, servings, tags, ingredients, steps. A matching id updates that recipe.</span></label>
+          <textarea id="io-in" class="mono" placeholder='{ "title": "Shakshuka", "prepTime": 30, "servings": 2, "tags": ["breakfast"], "ingredients": ["4 eggs", "1 can crushed tomatoes"], "steps": ["Simmer the tomatoes.", "Crack in the eggs and cover."] }'></textarea>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-primary" id="io-import">Import</button>
+          ${msg ? `<span class="io-msg ${isErr ? 'err' : ''}">${esc(msg)}</span>` : ''}
+        </div>
+        <hr>
+        <div class="field">
+          <label for="io-out">Export <span class="hint">— your full collection as JSON. Copy it into a chat to have recipes edited or added.</span></label>
+          <textarea id="io-out" class="mono" readonly style="min-height:160px">${esc(JSON.stringify(recipes, null, 2))}</textarea>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-ghost" id="io-copy">Copy to clipboard</button>
+        </div>
+      </div>
+    `;
+
+    document.getElementById('back').onclick = () => { view = { name: 'list' }; render(); };
+    if (keepInput) document.getElementById('io-in').value = keepInput;
+
+    document.getElementById('io-import').onclick = async () => {
+      const raw = document.getElementById('io-in').value.trim();
+      if (!raw) return renderIO('Paste some recipe JSON first.', true);
+      let parsed;
+      try { parsed = JSON.parse(raw); }
+      catch (e) { return renderIO('That isn’t valid JSON — check for a missing bracket or trailing comma.', true, raw); }
+      const items = Array.isArray(parsed) ? parsed : [parsed];
+      let added = 0, updated = 0, skipped = 0;
+      items.forEach(item => {
+        const rec = normalizeRecipe(item);
+        if (!rec) { skipped++; return; }
+        const idx = recipes.findIndex(r => r.id === rec.id);
+        // Keep the higher rev so a file-managed recipe isn't silently
+        // rolled back by re-importing older JSON.
+        if (idx >= 0) {
+          if ((recipes[idx].rev || 0) > (rec.rev || 0)) rec.rev = recipes[idx].rev;
+          recipes[idx] = rec; updated++;
+        }
+        else { recipes.unshift(rec); added++; }
+        // Re-importing a deleted seed un-deletes it
+        const di = deletedSeeds.indexOf(rec.id);
+        if (di >= 0) deletedSeeds.splice(di, 1);
+      });
+      await saveRecipes();
+      await saveDeletedSeeds();
+      const parts = [];
+      if (added) parts.push(`${added} added`);
+      if (updated) parts.push(`${updated} updated`);
+      if (skipped) parts.push(`${skipped} skipped (no title)`);
+      const failed = !added && !updated;
+      renderIO(parts.length ? `Done — ${parts.join(', ')}.` : 'Nothing to import.', failed, failed ? raw : '');
+    };
+
+    document.getElementById('io-copy').onclick = async () => {
+      const out = document.getElementById('io-out');
+      const ok = await copyText(out.value);
+      if (!ok) { out.focus(); out.select(); }
+      const btn = document.getElementById('io-copy');
+      btn.textContent = ok ? 'Copied ✓' : 'Press Ctrl+C to copy';
+      setTimeout(() => { const b = document.getElementById('io-copy'); if (b) b.textContent = 'Copy to clipboard'; }, 2000);
+    };
+  }
+
+  // ---------- Init ----------
+  (async () => {
+    unitPref = (await storageGetRaw(UNITS_KEY)) === 'metric' ? 'metric' : 'imperial';
+    deletedSeeds = (await storageGetJSON(DEL_KEY)) || [];
+    recipes = await loadRecipes();
+    await saveRecipes();               // persist the merged seed set
+    // Drop the active tag filter if its tag no longer exists
+    if (activeTag && !allTags().includes(activeTag)) activeTag = null;
+    render();
+  })();
+})();
+</script>
+</body>
+</html>
