@@ -139,7 +139,7 @@
     font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center;
     margin-top: 1px;
   }
-  .detail-actions { display: flex; gap: 10px; margin-top: 28px; }
+  .detail-actions { display: flex; gap: 10px; margin-top: 28px; flex-wrap: wrap; }
 
   /* ---------- Form ---------- */
   .form-card {
@@ -167,10 +167,29 @@
     .detail, .form-card { padding: 24px 20px; }
     .row2 { grid-template-columns: 1fr; }
   }
+
+  /* ---------- PDF export (via the browser's print-to-PDF) ---------- */
+  #print-sheet { display: none; }
+  @media print {
+    @page { margin: 16mm; }
+    body { background: #fff; }
+    .wrap { display: none; }
+    #print-sheet { display: block; max-width: 640px; margin: 0 auto; }
+    #print-sheet h1 { font-size: 26px; font-weight: 700; letter-spacing: -.02em; line-height: 1.2; }
+    #print-sheet .pmeta { color: var(--ink-soft); font-size: 13.5px; margin: 8px 0 4px; }
+    #print-sheet hr { border: 0; border-top: 1px solid var(--line); margin: 18px 0; }
+    #print-sheet h4 {
+      font-size: 12px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase;
+      color: var(--ink-soft); margin-bottom: 10px;
+    }
+    #print-sheet ol.steps li { break-inside: avoid; }
+    #print-sheet ol.steps li::before { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+  }
 </style>
 </head>
 <body>
 <div class="wrap"><div id="app"></div></div>
+<div id="print-sheet" aria-hidden="true"></div>
 
 <script>
 (() => {
@@ -650,6 +669,7 @@
         <ol class="steps">${r.steps.map(s => `<li><span>${esc(s)}</span></li>`).join('')}</ol>
         <div class="detail-actions">
           <button class="btn btn-ghost" id="edit">Edit</button>
+          <button class="btn btn-ghost" id="share-pdf" title="Save or share this recipe as a PDF">Share PDF</button>
           <button class="btn btn-ghost" id="copy-json" title="Copy this recipe as JSON">Copy JSON</button>
           <button class="btn btn-danger" id="delete">${confirmingDelete ? 'Really delete?' : 'Delete'}</button>
         </div>
@@ -669,6 +689,37 @@
       servingsOverride = Math.min(99, current + 1); render();
     };
     document.getElementById('edit').onclick = () => { view = { name: 'form', id: r.id }; render(); };
+    document.getElementById('share-pdf').onclick = () => {
+      // Fill the print-only sheet with this recipe (at the current scaling and
+      // unit preference), then hand off to the browser's print dialog — every
+      // platform offers "Save as PDF" / share from there.
+      const sheet = document.getElementById('print-sheet');
+      sheet.innerHTML = `
+        <h1>${esc(r.title)}</h1>
+        <div class="pmeta">
+          ${r.prepTime ? `⏱ ${esc(r.prepTime)} min &nbsp;·&nbsp; ` : ''}${current} serving${current === 1 ? '' : 's'}${r.tags.length ? ` &nbsp;·&nbsp; ${r.tags.map(esc).join(', ')}` : ''}
+        </div>
+        <hr>
+        <h4>Ingredients</h4>
+        <ul class="ings">${ings}</ul>
+        <hr>
+        <h4>Steps</h4>
+        <ol class="steps">${r.steps.map(s => `<li><span>${esc(s)}</span></li>`).join('')}</ol>
+      `;
+      // The document title becomes the suggested PDF filename.
+      const prevTitle = document.title;
+      document.title = r.title;
+      let restored = false;
+      const restore = () => {
+        if (restored) return;
+        restored = true;
+        document.title = prevTitle;
+        window.removeEventListener('afterprint', restore);
+      };
+      window.addEventListener('afterprint', restore);
+      window.print();
+      setTimeout(restore, 2000); // afterprint is unreliable on iOS Safari
+    };
     document.getElementById('copy-json').onclick = async () => {
       const ok = await copyText(JSON.stringify(r, null, 2));
       const btn = document.getElementById('copy-json');
