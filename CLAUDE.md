@@ -3,8 +3,9 @@
 Single-file web app: [index.html](index.html). No build step, no dependencies.
 This file is the permanent home of the app and its recipes; edit it directly.
 
-It is hosted on GitHub Pages so the user can use it on their phone (added to
-their home screen). The user's main workflow is asking Claude — from Claude Code
+It is hosted on GitHub Pages at https://theabzfan.github.io/recipes/ (repo:
+https://github.com/TheABZfan/recipes) so the user can use it on their phone
+(added to their home screen). The user's main workflow is asking Claude — from Claude Code
 on desktop or a Claude Code cloud session on their phone — to add or tweak
 recipes. **After editing, commit and push to `main`**: Pages redeploys
 automatically and the phone app picks up the change on next refresh. Prefer
