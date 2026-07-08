@@ -623,12 +623,18 @@
   }
 
   // ---------- Rendering ----------
+  let lastViewKey = null;
   function render() {
+    // Re-rendering the same view (scaling, unit toggle, …) keeps the scroll
+    // position; only navigating to a different view jumps to the top.
+    const key = view.name + ':' + (view.id || '');
+    const y = window.scrollY;
     if (view.name === 'list') renderList();
     else if (view.name === 'detail') renderDetail();
     else if (view.name === 'io') renderIO();
     else renderForm();
-    window.scrollTo(0, 0);
+    window.scrollTo(0, key === lastViewKey ? y : 0);
+    lastViewKey = key;
   }
 
   function allTags() {
@@ -775,8 +781,8 @@
     app.querySelectorAll('#steps li').forEach(li => li.onclick = async () => {
       const i = parseInt(li.dataset.i, 10);
       if (done.has(i)) done.delete(i); else done.add(i);
+      li.classList.toggle('done', done.has(i));   // in place — no re-render, no scroll jump
       if (done.size) doneSteps[r.id] = [...done]; else delete doneSteps[r.id];
-      render();
       await saveDoneSteps();
     });
     document.getElementById('minus').onclick = () => {
