@@ -139,6 +139,11 @@
     font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center;
     margin-top: 1px;
   }
+  /* Tap/click a step in the detail view to cross it off (not the print sheet) */
+  #app ol.steps li { cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
+  #app ol.steps li.done > span { text-decoration: line-through; color: var(--ink-soft); }
+  #app ol.steps li.done::before { content: '✓'; background: var(--accent); color: #fff; }
+  .steps-hint { font-size: 12px; font-weight: 400; color: var(--ink-soft); }
   .detail-actions { display: flex; gap: 10px; margin-top: 28px; flex-wrap: wrap; }
 
   /* ---------- Form ---------- */
@@ -396,6 +401,7 @@
   const KEY = 'recipe-tracker:recipes';
   const DEL_KEY = 'recipe-tracker:deleted-seeds';
   const UNITS_KEY = 'recipe-tracker:units';
+  const DONE_KEY = 'recipe-tracker:done-steps';
 
   async function storageGetRaw(key) {
     try {
@@ -449,6 +455,10 @@
     await storageSetRaw(DEL_KEY, JSON.stringify(deletedSeeds));
   }
 
+  async function saveDoneSteps() {
+    await storageSetRaw(DONE_KEY, JSON.stringify(doneSteps));
+  }
+
   // ---------- State ----------
   let recipes = [];
   let view = { name: 'list' };       // list | detail | form
@@ -458,6 +468,7 @@
   let confirmingDelete = false;
   let deletedSeeds = [];             // seed ids the user has deleted
   let unitPref = 'imperial';         // 'imperial' | 'metric', persisted
+  let doneSteps = {};                // recipe id -> [crossed-off step indices], persisted
 
   const app = document.getElementById('app');
   const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
@@ -708,6 +719,7 @@
     const base = r.servings || 1;
     const current = servingsOverride ?? base;
     const factor = current / base;
+    const done = new Set(doneSteps[r.id] || []);
 
     const ings = r.ingredients.map(line => {
       const { qty, unit, rest } = parseIngredient(line);
@@ -743,8 +755,8 @@
         </div>
         <ul class="ings">${ings}</ul>
         <hr>
-        <h4>Steps</h4>
-        <ol class="steps">${r.steps.map(s => `<li><span>${esc(s)}</span></li>`).join('')}</ol>
+        <h4>Steps <span class="steps-hint">— tap a step to cross it off</span></h4>
+        <ol class="steps" id="steps">${r.steps.map((s, i) => `<li data-i="${i}"${done.has(i) ? ' class="done"' : ''}><span>${esc(s)}</span></li>`).join('')}</ol>
         <div class="detail-actions">
           <button class="btn btn-ghost" id="edit">Edit</button>
           <button class="btn btn-ghost" id="share-pdf" title="Save or share this recipe as a PDF">Share PDF</button>
@@ -759,6 +771,13 @@
       unitPref = b.dataset.u;
       render();
       await storageSetRaw(UNITS_KEY, unitPref);
+    });
+    app.querySelectorAll('#steps li').forEach(li => li.onclick = async () => {
+      const i = parseInt(li.dataset.i, 10);
+      if (done.has(i)) done.delete(i); else done.add(i);
+      if (done.size) doneSteps[r.id] = [...done]; else delete doneSteps[r.id];
+      render();
+      await saveDoneSteps();
     });
     document.getElementById('minus').onclick = () => {
       servingsOverride = Math.max(1, current - 1); render();
@@ -814,6 +833,7 @@
         deletedSeeds.push(r.id);
         await saveDeletedSeeds();
       }
+      if (doneSteps[r.id]) { delete doneSteps[r.id]; await saveDoneSteps(); }
       await saveRecipes();
       confirmingDelete = false;
       view = { name: 'list' };
@@ -883,6 +903,8 @@
       };
       if (editing) {
         Object.assign(editing, data);
+        // Steps may have changed, so saved crossed-off indices no longer line up.
+        if (doneSteps[editing.id]) { delete doneSteps[editing.id]; await saveDoneSteps(); }
       } else {
         recipes.unshift({ id: uid(), ...data });
       }
@@ -991,6 +1013,7 @@
   (async () => {
     unitPref = (await storageGetRaw(UNITS_KEY)) === 'metric' ? 'metric' : 'imperial';
     deletedSeeds = (await storageGetJSON(DEL_KEY)) || [];
+    doneSteps = (await storageGetJSON(DONE_KEY)) || {};
     recipes = await loadRecipes();
     await saveRecipes();               // persist the merged seed set
     // Drop the active tag filter if its tag no longer exists
