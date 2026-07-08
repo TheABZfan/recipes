@@ -139,6 +139,9 @@
     font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center;
     margin-top: 1px;
   }
+  ul.notes { list-style: none; }
+  ul.notes li { display: flex; gap: 10px; padding: 6px 0; }
+  ul.notes li::before { content: '›'; flex: none; font-weight: 700; color: var(--accent); }
   /* Tap/click a step in the detail view to cross it off (not the print sheet) */
   #app ol.steps li { cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
   #app ol.steps li.done > span { text-decoration: line-through; color: var(--ink-soft); }
@@ -206,6 +209,8 @@
   //
   // Editing rules (for Claude or anyone editing this file directly):
   //   - Add a recipe: append an object with a NEW unique id and rev: 1.
+  //     Tips/asides go in the optional `notes` array (rendered as its own
+  //     section after the steps), not as a trailing "Notes:" step.
   //   - Tweak a recipe: edit it here and bump its rev by 1 — the higher rev
   //     overrides the copy saved in the browser's localStorage.
   //   - A recipe deleted in the app stays deleted; to bring it back, re-add it
@@ -319,7 +324,7 @@
     },
     {
       id: 'seed-margherita-pizza',
-      rev: 1,
+      rev: 2,
       title: 'Homemade Margherita Pizza (Oven-Baked)',
       prepTime: '180',
       servings: 2,
@@ -346,12 +351,15 @@
         'Stretch and top — Stretch one dough ball into a 25–30cm round, leaving a thicker edge. Thin layer of sauce, leaving a border. Scatter half the mozzarella.',
         'Bake — Slide onto the hot stone/sheet, bake ~7 min until puffed, charred in spots, cheese bubbling.',
         'Finish — Scatter fresh basil, drizzle with olive oil, slice. Repeat with second dough ball.',
-        'Notes: If your oven only hits 220–240°C, bake 8–10 min and finish with a 1–2 min broiler blast for char. Same-day dough works with a 2-hr rise, but a slow 24–48 hr fridge rise gives better flavor and texture if you can plan ahead.',
+      ],
+      notes: [
+        'If your oven only hits 220–240°C, bake 8–10 min and finish with a 1–2 min broiler blast for char.',
+        'Same-day dough works with a 2-hr rise, but a slow 24–48 hr fridge rise gives better flavor and texture if you can plan ahead.',
       ],
     },
     {
       id: 'seed-harissa-braised-beans-lamb',
-      rev: 1,
+      rev: 2,
       title: 'Harissa-Braised Beans with Minced Lamb',
       prepTime: '60',
       servings: 4,
@@ -392,12 +400,15 @@
         'Braise — Reduce heat to low, partially cover, and simmer for 20 minutes, stirring occasionally, until the sauce thickens and the lamb is tender.',
         'Add beans — Stir in the beans (and chickpeas/kidney beans if using), simmer uncovered for another 10 minutes so everything warms through without falling apart. Season with salt and pepper.',
         'Finish and serve — Off the heat, stir in the lemon zest, juice, and most of the parsley. Taste and adjust with more harissa, salt, or lemon. Serve with remaining parsley on top, alongside rice, flatbread, or on its own.',
-        'Notes: The harissa makes roughly double what the stew needs. If adding both optional beans, the dish will serve closer to 6.',
+      ],
+      notes: [
+        'The harissa makes roughly double what the stew needs.',
+        'If adding both optional beans, the dish will serve closer to 6.',
       ],
     },
     {
       id: 'seed-carbonara',
-      rev: 1,
+      rev: 2,
       title: 'Carbonara',
       prepTime: '30',
       servings: 2,
@@ -421,12 +432,17 @@
         'Combine off heat — Transfer the pasta directly into the pan with the guanciale (and mushrooms, if using), off heat, along with a splash of starchy pasta water. Toss to coat in the fat.',
         'Emulsify with egg mixture — Let the pasta cool for 30-60 seconds so it won\'t scramble the eggs. Pour in the egg-cheese mixture, tossing constantly and adding pasta water a little at a time until you get a silky, glossy sauce that clings to the pasta.',
         'Finish and serve — Plate immediately, finishing with extra grated cheese and cracked black pepper.',
-        'Notes: Classic Roman carbonara — no cream; the sauce emulsifies from egg, cheese, rendered fat, and starchy pasta water. Guanciale > pancetta and Parmigiano Reggiano > Grana Padano as substitutes when the ideal isn\'t available. Mushrooms are not traditional but a personal favorite — sauté them in the rendered guanciale fat before combining. Take the pan off heat before adding eggs to avoid scrambling.',
+      ],
+      notes: [
+        'Classic Roman carbonara — no cream; the sauce emulsifies from egg, cheese, rendered fat, and starchy pasta water.',
+        'Guanciale > pancetta and Parmigiano Reggiano > Grana Padano as substitutes when the ideal isn\'t available.',
+        'Mushrooms are not traditional but a personal favorite — sauté them in the rendered guanciale fat before combining.',
+        'Take the pan off heat before adding eggs to avoid scrambling.',
       ],
     },
     {
       id: 'seed-bean-chicken-curry-stew',
-      rev: 1,
+      rev: 2,
       title: 'Bean & Chicken Curry-Stew',
       prepTime: '75',
       servings: 6,
@@ -460,7 +476,13 @@
         'Add tomato polpa and stock — Pour in the tomato polpa and stock, scraping the bottom of the pan to release the fond. Add potatoes now if using.',
         'Simmer — Return the seared chicken to the pan. Bring to a boil, then reduce heat and simmer uncovered. (~30 min)',
         'Add the beans — Stir in cannellini beans, red kidney beans, and chickpeas and simmer for a final 5 minutes to bring everything together. (~5 min)',
-        'Notes: A mashup of curry and stew, bean-forward and built for leftovers. Cannellini, red kidney, and chickpeas are the core, but proportions/varieties are flexible. Chicken is optional — if using breast, consider adding it back in during just the last 10-15 minutes of the simmer rather than the full 30, so it doesn\'t dry out; thigh can handle the full simmer fine. If skin-on, no oil needed for searing — render it skin-side down. Deglaze/scrape the fond when adding stock, that\'s where a lot of flavor lives. Adjust chilli and aromatics to taste.',
+      ],
+      notes: [
+        'A mashup of curry and stew, bean-forward and built for leftovers. Cannellini, red kidney, and chickpeas are the core, but proportions/varieties are flexible.',
+        'Chicken is optional — if using breast, consider adding it back in during just the last 10-15 minutes of the simmer rather than the full 30, so it doesn\'t dry out; thigh can handle the full simmer fine.',
+        'If skin-on, no oil needed for searing — render it skin-side down.',
+        'Deglaze/scrape the fond when adding stock, that\'s where a lot of flavor lives.',
+        'Adjust chilli and aromatics to taste.',
       ],
     },
   ];
@@ -718,7 +740,8 @@
       if (!q) return true;
       return r.title.toLowerCase().includes(q)
         || r.tags.some(t => t.toLowerCase().includes(q))
-        || r.ingredients.some(i => i.toLowerCase().includes(q));
+        || r.ingredients.some(i => i.toLowerCase().includes(q))
+        || (r.notes || []).some(n => n.toLowerCase().includes(q));
     });
   }
 
@@ -831,6 +854,10 @@
         <hr>
         <h4>Steps <span class="steps-hint">— tap a step to cross it off</span></h4>
         <ol class="steps" id="steps">${r.steps.map((s, i) => `<li data-i="${i}"${done.has(i) ? ' class="done"' : ''}><span>${esc(s)}</span></li>`).join('')}</ol>
+        ${r.notes && r.notes.length ? `
+        <hr>
+        <h4>Notes</h4>
+        <ul class="notes">${r.notes.map(n => `<li><span>${esc(n)}</span></li>`).join('')}</ul>` : ''}
         <div class="detail-actions">
           <button class="btn btn-ghost" id="edit">Edit</button>
           <button class="btn btn-ghost" id="share-pdf" title="Save or share this recipe as a PDF">Share PDF</button>
@@ -876,6 +903,10 @@
         <hr>
         <h4>Steps</h4>
         <ol class="steps">${r.steps.map(s => `<li><span>${esc(s)}</span></li>`).join('')}</ol>
+        ${r.notes && r.notes.length ? `
+        <hr>
+        <h4>Notes</h4>
+        <ul class="notes">${r.notes.map(n => `<li><span>${esc(n)}</span></li>`).join('')}</ul>` : ''}
       `;
       // The document title becomes the suggested PDF filename.
       const prevTitle = document.title;
@@ -917,7 +948,7 @@
 
   function renderForm() {
     const editing = view.id ? recipes.find(x => x.id === view.id) : null;
-    const r = editing || { title: '', prepTime: '', servings: 4, tags: [], ingredients: [], steps: [] };
+    const r = editing || { title: '', prepTime: '', servings: 4, tags: [], ingredients: [], steps: [], notes: [] };
 
     app.innerHTML = `
       <button class="back" id="back">← Cancel</button>
@@ -949,6 +980,10 @@
           <label for="f-steps">Steps <span class="hint">(one per line)</span></label>
           <textarea id="f-steps" placeholder="Whisk the eggs.&#10;Fold in the flour.">${esc(r.steps.join('\n'))}</textarea>
         </div>
+        <div class="field">
+          <label for="f-notes">Notes <span class="hint">(one per line, optional)</span></label>
+          <textarea id="f-notes" style="min-height:70px" placeholder="Keeps in the fridge for a week.">${esc((r.notes || []).join('\n'))}</textarea>
+        </div>
         <div class="form-actions">
           <button class="btn btn-primary" id="save">${editing ? 'Save changes' : 'Add recipe'}</button>
           <button class="btn btn-ghost" id="cancel">Cancel</button>
@@ -974,6 +1009,7 @@
         tags: document.getElementById('f-tags').value.split(',').map(s => s.trim().toLowerCase()).filter(Boolean),
         ingredients: splitLines(document.getElementById('f-ings').value),
         steps: splitLines(document.getElementById('f-steps').value),
+        notes: splitLines(document.getElementById('f-notes').value),
       };
       if (editing) {
         Object.assign(editing, data);
@@ -1010,6 +1046,7 @@
       tags: toTags(x.tags),
       ingredients: toLines(x.ingredients),
       steps: toLines(x.steps),
+      notes: toLines(x.notes),
     };
   }
 
@@ -1019,7 +1056,7 @@
       <div class="form-card">
         <h2>Import &amp; export</h2>
         <div class="field">
-          <label for="io-in">Import <span class="hint">— paste one recipe <code>{…}</code> or a list <code>[…]</code>. Fields: title, prepTime, servings, tags, ingredients, steps. A matching id updates that recipe.</span></label>
+          <label for="io-in">Import <span class="hint">— paste one recipe <code>{…}</code> or a list <code>[…]</code>. Fields: title, prepTime, servings, tags, ingredients, steps, notes. A matching id updates that recipe.</span></label>
           <textarea id="io-in" class="mono" placeholder='{ "title": "Shakshuka", "prepTime": 30, "servings": 2, "tags": ["breakfast"], "ingredients": ["4 eggs", "1 can crushed tomatoes"], "steps": ["Simmer the tomatoes.", "Crack in the eggs and cover."] }'></textarea>
         </div>
         <div class="form-actions">

@@ -25,7 +25,8 @@ immediately, not a review step.
   (e.g. `'seed-shakshuka'`) and `rev: 1`. Fields: `id`, `rev`, `title`,
   `prepTime` (string, minutes), `servings` (number), `tags` (lowercase strings),
   `ingredients` (strings, one per line, quantity first so scaling works),
-  `steps` (strings).
+  `steps` (strings), `notes` (strings, optional — tips/asides shown in a
+  Notes section after the steps; don't put them in `steps`).
 - **Tweak a recipe**: edit it in `SEED_RECIPES` and **bump its `rev` by 1** —
   otherwise the browser's stored copy wins and the change never shows up.
 - **Recipe deleted in the app**: it stays deleted (id recorded in localStorage).
