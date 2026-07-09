@@ -64,6 +64,13 @@
   .chip:hover { border-color: #d6cfc6; color: var(--ink); }
   .chip.active { background: var(--ink); border-color: var(--ink); color: #fff; }
 
+  /* ---------- Sort row ---------- */
+  .sortbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; }
+  .sortbar .label {
+    font-size: 12px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+
   /* ---------- Card grid ---------- */
   .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
   .card {
@@ -538,6 +545,7 @@
   const DEL_KEY = 'recipe-tracker:deleted-seeds';
   const UNITS_KEY = 'recipe-tracker:units';
   const DONE_KEY = 'recipe-tracker:done-steps';
+  const SORT_KEY = 'recipe-tracker:sort';
 
   async function storageGetRaw(key) {
     try {
@@ -605,6 +613,7 @@
   let deletedSeeds = [];             // seed ids the user has deleted
   let unitPref = 'imperial';         // 'imperial' | 'metric', persisted
   let doneSteps = {};                // recipe id -> [crossed-off step indices], persisted
+  let sortBy = 'default';            // 'default' | 'alpha' | 'time' | 'ingredients', persisted
 
   const app = document.getElementById('app');
   const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
@@ -791,9 +800,20 @@
     });
   }
 
+  function sorted(list) {
+    // Recipes without a prep time sort to the end of the "time" order.
+    const time = r => { const t = parseFloat(r.prepTime); return isNaN(t) ? Infinity : t; };
+    if (sortBy === 'alpha') return [...list].sort((a, b) => a.title.localeCompare(b.title));
+    if (sortBy === 'time') return [...list].sort((a, b) => time(a) - time(b));
+    if (sortBy === 'ingredients') return [...list].sort((a, b) => a.ingredients.length - b.ingredients.length);
+    return list;
+  }
+
+  const SORTS = [['default', 'Default'], ['alpha', 'A–Z'], ['time', 'Time'], ['ingredients', 'Ingredients']];
+
   function renderList() {
     const tags = allTags();
-    const list = filtered();
+    const list = sorted(filtered());
 
     app.innerHTML = `
       <header>
@@ -808,6 +828,12 @@
       ${tags.length ? `<div class="tagbar">
         <button class="chip ${!activeTag ? 'active' : ''}" data-tag="">All</button>
         ${tags.map(t => `<button class="chip ${activeTag === t ? 'active' : ''}" data-tag="${esc(t)}">${esc(t)}</button>`).join('')}
+      </div>` : ''}
+      ${recipes.length ? `<div class="sortbar">
+        <span class="label">Sort</span>
+        <div class="seg" id="sort">
+          ${SORTS.map(([key, label]) => `<button data-s="${key}" class="${sortBy === key ? 'active' : ''}">${label}</button>`).join('')}
+        </div>
       </div>` : ''}
       ${list.length ? `<div class="grid">${list.map(cardHTML).join('')}</div>`
         : `<div class="empty">
@@ -834,6 +860,11 @@
     app.querySelectorAll('.chip').forEach(ch => ch.onclick = () => {
       activeTag = ch.dataset.tag || null;
       render();
+    });
+    app.querySelectorAll('#sort button').forEach(b => b.onclick = async () => {
+      sortBy = b.dataset.s;
+      render();
+      await storageSetRaw(SORT_KEY, sortBy);
     });
     app.querySelectorAll('.card').forEach(c => c.onclick = () => {
       view = { name: 'detail', id: c.dataset.id };
@@ -1169,6 +1200,8 @@
   // ---------- Init ----------
   (async () => {
     unitPref = (await storageGetRaw(UNITS_KEY)) === 'metric' ? 'metric' : 'imperial';
+    const storedSort = await storageGetRaw(SORT_KEY);
+    if (SORTS.some(([key]) => key === storedSort)) sortBy = storedSort;
     deletedSeeds = (await storageGetJSON(DEL_KEY)) || [];
     doneSteps = (await storageGetJSON(DONE_KEY)) || {};
     recipes = await loadRecipes();
