@@ -19,13 +19,25 @@ Handy flags for trying it out without waiting an hour:
 from __future__ import annotations
 
 import argparse
+import os
 import platform
 import subprocess
 import sys
 import time
-import tkinter as tk
+import traceback
+
+try:
+    import tkinter as tk
+
+    TK_IMPORT_ERROR = None
+except Exception as exc:  # pragma: no cover - depends on the Python build
+    tk = None
+    TK_IMPORT_ERROR = exc
 
 SYSTEM = platform.system()
+
+APP_DIR = os.path.dirname(os.path.abspath(__file__))
+LOG_PATH = os.path.join(APP_DIR, "movement-reminder-error.log")
 
 # Palette
 BG = "#0f141c"
@@ -36,6 +48,62 @@ ACCENT = "#4ade80"
 DANGER = "#f0883e"
 
 APP_NAME = "Movement Reminder"
+
+NO_TKINTER_HELP = """This copy of Python can't open windows: importing tkinter failed.
+
+Fix it one of these ways:
+  - Re-run the installer from python.org, choose "Modify", and make sure
+    "tcl/tk and IDLE" is ticked.
+  - If you installed Python from the Microsoft Store, install it from
+    python.org instead - the Store build is the usual cause of this.
+  - On Debian/Ubuntu: sudo apt install python3-tk
+
+Details: %s"""
+
+
+# --------------------------------------------------------------------------
+# Failure reporting (the app usually runs without a console, so a bare
+# traceback would go nowhere - write it down and put it on screen)
+# --------------------------------------------------------------------------
+
+def report_fatal(message: str) -> None:
+    try:
+        with open(LOG_PATH, "a", encoding="utf-8") as handle:
+            handle.write(
+                "\n=== %s ===\n%s\n" % (time.strftime("%Y-%m-%d %H:%M:%S"), message)
+            )
+        message += "\n\nThis was also written to:\n%s" % LOG_PATH
+    except OSError:
+        pass
+
+    try:
+        sys.stderr.write(message + "\n")
+        sys.stderr.flush()
+    except Exception:
+        pass
+
+    if SYSTEM == "Windows":
+        try:
+            import ctypes
+
+            # MB_OK | MB_ICONERROR | MB_SETFOREGROUND
+            ctypes.windll.user32.MessageBoxW(
+                None, message[:2000], APP_NAME + " - error", 0x10 | 0x10000
+            )
+            return
+        except Exception:
+            pass
+
+    if tk is not None:
+        try:
+            from tkinter import messagebox
+
+            root = tk.Tk()
+            root.withdraw()
+            messagebox.showerror(APP_NAME + " - error", message[:2000])
+            root.destroy()
+        except Exception:
+            pass
 
 
 # --------------------------------------------------------------------------
@@ -503,6 +571,7 @@ class ReminderApp:
         self.next_at = time.monotonic() + self.interval
 
         self.root = tk.Tk()
+        self.root.report_callback_exception = self._on_callback_error
         self.root.title(APP_NAME)
         self.root.configure(bg=BG)
         self.root.resizable(False, False)
@@ -510,6 +579,17 @@ class ReminderApp:
         self.root.protocol("WM_DELETE_WINDOW", self.quit)
         self._build_panel()
         self._tick()
+
+    def _on_callback_error(self, exc, value, tb) -> None:
+        """Never let a callback blow up silently - and never leave you locked in."""
+        detail = "".join(traceback.format_exception(exc, value, tb))
+        if self.break_win is not None:
+            # A crash mid-break must not trap you behind the lock screen.
+            try:
+                self.break_win.finish(completed=False)
+            except Exception:
+                pass
+        report_fatal("%s hit an error:\n\n%s" % (APP_NAME, detail))
 
     # -- UI ---------------------------------------------------------------
 
@@ -684,6 +764,11 @@ def parse_args(argv=None) -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
+
+    if tk is None:
+        report_fatal(NO_TKINTER_HELP % (TK_IMPORT_ERROR,))
+        return 2
+
     if SYSTEM == "Windows":
         try:
             import ctypes
@@ -691,7 +776,15 @@ def main() -> int:
             ctypes.windll.shcore.SetProcessDpiAwareness(1)
         except Exception:
             pass
-    ReminderApp(args).run()
+
+    try:
+        ReminderApp(args).run()
+    except Exception:
+        report_fatal(
+            "%s hit an unexpected error and had to stop.\n\n%s"
+            % (APP_NAME, traceback.format_exc())
+        )
+        return 1
     return 0
 
 

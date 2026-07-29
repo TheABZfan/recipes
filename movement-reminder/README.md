@@ -29,6 +29,27 @@ A small control panel opens showing the countdown to the next break, with
 **Break now**, **Pause** and **Quit**. Minimise it and forget about it — the
 break takes over the screen on its own when it's due.
 
+## If nothing happens when you launch it
+
+A brief console flash is normal — the batch file hands off to `pythonw` (which
+has no console) and exits. If no window appears after that, run
+**`Troubleshoot.bat`**: it runs the app with a visible console, prints which
+Python it found, and stays open so you can read the error. The app also writes
+failures to `movement-reminder-error.log` next to the script, and shows them in
+a message box.
+
+The two usual causes on Windows:
+
+- **The Microsoft Store placeholder.** Windows ships stub `python.exe` /
+  `pythonw.exe` in `%LOCALAPPDATA%\Microsoft\WindowsApps` that sit on your PATH
+  even if you installed Python from python.org. The stub `pythonw.exe` exits
+  silently — a perfect "nothing happened". Either install from
+  [python.org](https://www.python.org/downloads/), or turn the aliases off under
+  **Settings → Apps → Advanced app settings → App execution aliases**. The
+  launcher now prefers the `py`/`pyw` launcher, which sidesteps this entirely.
+- **Python without tkinter.** Re-run the python.org installer, choose
+  **Modify**, and tick **"tcl/tk and IDLE"**.
+
 ## Start it automatically at login (Windows)
 
 1. Press <kbd>Win</kbd>+<kbd>R</kbd>, type `shell:startup`, press Enter.
