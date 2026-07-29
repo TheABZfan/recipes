@@ -38,10 +38,11 @@ still takes over the screen when it's due.
   reopens the window; right-click gives you Show / Break now / Pause / Quit.
   Closing or minimising the window hides it there rather than quitting — use
   **Quit** when you actually mean it.
-- **Away from the desk?** If you haven't touched the keyboard or mouse for 5
-  minutes when a break comes due, it doesn't fire — you're already up. The
-  countdown restarts when you come back, so you get a full hour of sitting
-  before the next one rather than an alarm at an empty chair.
+- **Away from the desk?** After 5 minutes without keyboard or mouse input the
+  countdown **pauses** and turns red — you're already up, so there's no point
+  running the clock or sounding an alarm at an empty chair. It picks up from
+  exactly where it stopped when you come back. If a break fell due while you
+  were away, it fires as soon as you return.
 
 ## Settings
 
@@ -125,7 +126,8 @@ python movement_reminder.py --interval 1 --break-length 15 --grace 5
 
 ## What it can and can't lock down
 
-The break window covers every monitor, sits above the taskbar, refuses
+The break window covers every monitor — with the countdown centred on your main
+screen rather than in the gap between them — sits above the taskbar, refuses
 `Alt`+`F4` and the close button, un-minimises itself if something minimises it,
 and grabs focus back roughly twice a second — so typing goes nowhere else while
 it's up. What no ordinary program can block is the operating system itself:

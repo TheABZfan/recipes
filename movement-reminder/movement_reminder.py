@@ -830,6 +830,23 @@ def fmt_long(seconds: float) -> str:
     return "%d:%02d" % (minutes, secs)
 
 
+def primary_center_in_span(virtual_origin, primary_size):
+    """Middle of the primary monitor, in coordinates local to a window that
+    covers the whole virtual desktop.
+
+    On Windows the primary monitor always starts at (0, 0) in virtual desktop
+    coordinates, while the virtual desktop itself can start at a negative
+    offset when a second screen sits to the left or above. Subtracting that
+    offset converts to window-local pixels. Falls back to the middle of the
+    span if the primary size looks nonsensical.
+    """
+    origin_x, origin_y = virtual_origin
+    width, height = primary_size
+    if width <= 0 or height <= 0:
+        return None
+    return (-origin_x + width // 2, -origin_y + height // 2)
+
+
 def center(win: tk.Misc, width: int, height: int) -> None:
     screen_w = win.winfo_screenwidth()
     screen_h = win.winfo_screenheight()
@@ -984,7 +1001,14 @@ class BreakWindow:
         self._make_inescapable(primary_only)
 
         wrap = tk.Frame(self.win, bg=BG)
-        wrap.place(relx=0.5, rely=0.5, anchor="center")
+        if self.content_center is None:
+            wrap.place(relx=0.5, rely=0.5, anchor="center")
+        else:
+            # Spanning every monitor would otherwise centre the text in the gap
+            # between them; put it on the main screen instead.
+            wrap.place(
+                x=self.content_center[0], y=self.content_center[1], anchor="center"
+            )
 
         tk.Label(
             wrap,
@@ -1043,6 +1067,9 @@ class BreakWindow:
         self._tick()
 
     def _make_inescapable(self, primary_only: bool) -> None:
+        # Set by _span_all_monitors when the window covers more than one screen;
+        # None means "just centre in the window".
+        self.content_center = None
         spanned = False
         if SYSTEM == "Windows" and not primary_only:
             spanned = self._span_all_monitors()
@@ -1068,17 +1095,20 @@ class BreakWindow:
     def _span_all_monitors(self) -> bool:
         """Cover the whole virtual desktop so a second screen isn't an escape hatch."""
         try:
-            import ctypes
-
             metrics = ctypes.windll.user32.GetSystemMetrics
             x = metrics(76)  # SM_XVIRTUALSCREEN
             y = metrics(77)  # SM_YVIRTUALSCREEN
             width = metrics(78)  # SM_CXVIRTUALSCREEN
             height = metrics(79)  # SM_CYVIRTUALSCREEN
+            primary_w = metrics(0)  # SM_CXSCREEN
+            primary_h = metrics(1)  # SM_CYSCREEN
             if width <= 0 or height <= 0:
                 return False
             self.win.overrideredirect(True)
             self.win.geometry("%dx%d+%d+%d" % (width, height, x, y))
+            self.content_center = primary_center_in_span(
+                (x, y), (primary_w, primary_h)
+            )
             return True
         except Exception:
             return False
@@ -1310,9 +1340,10 @@ class ReminderApp:
         self.breaks_taken = 0
         self.breaks_skipped = 0
         self.delays = 0
-        self.away_resets = 0
+        self.away_pauses = 0
         self.away = False
         self._was_away = False
+        self._away_remaining = 0.0
         self._idle_cache = (0.0, None)
         self._flash = ("", 0.0)
         self._tray_tip = ""
@@ -1450,8 +1481,8 @@ class ReminderApp:
             self.breaks_skipped,
             self.delays,
         )
-        if self.away_resets:
-            text += " · away %d" % self.away_resets
+        if self.away_pauses:
+            text += " · away %d" % self.away_pauses
         self.tally.config(text=text)
 
     def flash(self, message: str, seconds: float = 3.0) -> None:
@@ -1479,13 +1510,13 @@ class ReminderApp:
             idle = self._idle()
             if idle is not None and idle >= self.idle_threshold:
                 self.away = True
-                # Away from the desk is already a break. Keep the countdown
-                # rolling so you get a full interval once you're back, instead
-                # of an alarm going off at an empty chair.
-                if self.next_at - now < self.interval:
-                    self.next_at = now + self.interval
-        if self.away and not self._was_away:
-            self.away_resets += 1
+        if self.away:
+            if not self._was_away:
+                self.away_pauses += 1
+                self._away_remaining = max(0.0, self.next_at - now)
+            # Away from the desk pauses the clock where it stood, so you pick up
+            # the same countdown when you sit back down.
+            self.next_at = now + self._away_remaining
         self._was_away = self.away
 
         if self.paused:
@@ -1495,8 +1526,8 @@ class ReminderApp:
             self.countdown.config(text="now", fg=ACCENT)
             self.status.config(text="break in progress")
         elif self.away:
-            self.countdown.config(text="away", fg=FG_DIM)
-            self.status.config(text="you're away - the timer restarts when you're back")
+            self.countdown.config(text=fmt_long(self._away_remaining), fg=DANGER)
+            self.status.config(text="paused - you're away from the desk")
         else:
             remaining = self.next_at - now
             if remaining <= 0:
@@ -1543,7 +1574,7 @@ class ReminderApp:
         elif self.alert is not None or self.break_win is not None:
             tip = "%s - break in progress" % APP_NAME
         elif self.away:
-            tip = "%s - waiting, you're away" % APP_NAME
+            tip = "%s - paused, you're away" % APP_NAME
         else:
             tip = "%s - next break in %s" % (
                 APP_NAME,
